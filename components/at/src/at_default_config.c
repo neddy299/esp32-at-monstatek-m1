@@ -75,6 +75,7 @@ static const esp_at_module_info_t esp_at_module_info[] = {
 
 #if defined(CONFIG_IDF_TARGET_ESP32C6)
     {"ESP32C6-4MB",    CONFIG_ESP_AT_OTA_TOKEN_ESP32C6_4MB,         CONFIG_ESP_AT_OTA_SSL_TOKEN_ESP32C6_4MB},
+    {"ESP32C6-SPI",    NULL,  NULL},
 #endif
 };
 

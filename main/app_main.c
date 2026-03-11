@@ -228,7 +228,7 @@ void app_main(void)
         printf("regist ethernet cmd fail\r\n");
     }
 #endif
-    
+
 #ifdef CONFIG_AT_FS_COMMAND_SUPPORT
     if(esp_at_fs_cmd_regist() == false) {
         printf("regist fs cmd fail\r\n");

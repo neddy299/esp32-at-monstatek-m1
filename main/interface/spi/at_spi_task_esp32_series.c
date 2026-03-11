@@ -107,7 +107,6 @@ void spi_mutex_unlock(void)
 
 bool cb_master_write_buffer(void* arg, spi_slave_hd_event_t* event, BaseType_t* awoken)
 {
-    //Give the semaphore.
     BaseType_t mustYield = false;
     spi_msg_t spi_msg = {
         .direct = SPI_SLAVE_RD,
@@ -135,6 +134,7 @@ inline static void write_transmit_len(spi_mode_t spi_mode, uint16_t transmit_len
     }
 
     spi_slave_hd_write_buffer(SLAVE_HOST, SLAVE_CONFIG_ADDR, (uint8_t*)&rd_status_opt, sizeof(spi_rd_status_opt_t));
+    spi_slave_hd_write_buffer(SLAVE_HOST, 0, (uint8_t*)&rd_status_opt, sizeof(spi_rd_status_opt_t));
 }
 
 /* Called when spi receive a normal AT command, make sure you have added \r\n in your spi data */
@@ -173,7 +173,7 @@ static int32_t at_spi_write_data(uint8_t* buf, int32_t len)
         ESP_LOGE(TAG, "Empty write data.");
         return 0;
     }
-    
+
     if (buf == NULL  || len > SPI_WRITE_STREAM_BUFFER || len == 0) {
         ESP_LOGE(TAG, "Write data error, len:%d", len);
         return -1;
@@ -232,11 +232,12 @@ static void at_spi_slave_task(void* pvParameters)
         gpio_set_level(SPI_SLAVE_HANDSHARK_GPIO, 0);
 
         xQueueReceive(msg_queue, (void*)&trans_msg, (TickType_t)portMAX_DELAY);
+
         ESP_LOGD(TAG, "Direct: %d", trans_msg.direct);
         if (trans_msg.direct == SPI_SLAVE_RD) {    // master -> slave
 
             // Tell master transmit mode is master send
-            write_transmit_len(SPI_SLAVE_RD, SPI_DMA_MAX_LEN); 
+            write_transmit_len(SPI_SLAVE_RD, SPI_DMA_MAX_LEN);
 
             memset(&slave_trans, 0x0, sizeof(spi_slave_hd_data_t));
             slave_trans.data = data_buf;
@@ -395,7 +396,6 @@ void at_custom_init(void)
     spi_slave_rx_ring_buf = xStreamBufferCreate(SPI_READ_STREAM_BUFFER, 1024);
     spi_slave_tx_ring_buf = xStreamBufferCreate(SPI_WRITE_STREAM_BUFFER, 1024);
     if (pxMutex == NULL || spi_slave_rx_ring_buf == NULL || spi_slave_tx_ring_buf == NULL) {
-        // There was not enough heap memory space available to create
         ESP_LOGE(TAG, "creat StreamBuffer error, free heap heap: %d", esp_get_free_heap_size());
         return;
     }

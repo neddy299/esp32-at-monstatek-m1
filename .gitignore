@@ -1,5 +1,6 @@
-# VS Code Settings
+# VS Code / IDE Settings
 .vscode/
+.idea/
 
 include/config
 include/sdkconfig.h
@@ -9,6 +10,35 @@ sdkconfig
 .DS_Store
 
 *.pyc
+__pycache__/
+
+# Local build scripts (may contain user-specific paths)
+*.bat
+*.ps1
+
+# Build outputs and logs
+output/
+*.log
+*_build_log.txt
+build_out*.txt
+*build_out*.txt
+
+# ESP-IDF managed components and lock file
+managed_components/
+dependencies.lock
+
+# ESP-IDF framework (pulled in by install script)
+esp-idf/
+
+# Backup files
+*.bak
+*.orig
+
+# Module info backups
+module_info_backup.json
+
+# AI assistant working files
+.claude/
 
 # Doc build artifacts
 docs/_build/

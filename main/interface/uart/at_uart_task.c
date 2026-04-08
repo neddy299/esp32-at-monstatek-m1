@@ -41,6 +41,8 @@
 #include "at_interface.h"
 #include "at_custom_hid_cmd.h"
 #include "at_custom_zigbee_cmd.h"
+#include "at_custom_deauth_cmd.h"
+#include "at_custom_stascan_cmd.h"
 
 #ifdef CONFIG_IDF_TARGET_ESP32
 #include "esp32/rom/uart.h"
@@ -58,7 +60,7 @@ typedef struct {
     int8_t stop_bits;
     int8_t parity;
     int8_t flow_control;
-} at_nvm_uart_config_struct; 
+} at_nvm_uart_config_struct;
 
 typedef struct {
     int32_t tx;
@@ -303,7 +305,7 @@ static void at_uart_init(void)
         .txfifo_empty_intr_thresh = 10
     };
 
-    int32_t tx_pin = CONFIG_AT_UART_PORT_TX_PIN_DEFAULT;	
+    int32_t tx_pin = CONFIG_AT_UART_PORT_TX_PIN_DEFAULT;
     int32_t rx_pin = CONFIG_AT_UART_PORT_RX_PIN_DEFAULT;
     int32_t cts_pin = CONFIG_AT_UART_PORT_CTS_PIN_DEFAULT;
     int32_t rts_pin = CONFIG_AT_UART_PORT_RTS_PIN_DEFAULT;
@@ -390,7 +392,7 @@ static void at_uart_init(void)
             uart_config.stop_bits = uart_nvm_config.stop_bits;
         }
 
-        if ((uart_nvm_config.parity == UART_PARITY_DISABLE) 
+        if ((uart_nvm_config.parity == UART_PARITY_DISABLE)
             || (uart_nvm_config.parity == UART_PARITY_ODD)
             || (uart_nvm_config.parity == UART_PARITY_EVEN)) {
             uart_config.parity = uart_nvm_config.parity;
@@ -579,7 +581,7 @@ static uint8_t at_setupCmdUartDef(uint8_t para_num)
     at_default_flag = true;
     ret = at_setupCmdUart(para_num);
     at_default_flag = false;
-    
+
     return ret;
 }
 
@@ -731,7 +733,7 @@ void at_interface_init (void)
         .get_data_length = at_port_get_data_length,
         .wait_write_complete = at_port_wait_write_complete,
     };
-    
+
     esp_at_custom_ops_struct esp_at_custom_ops = {
         .status_callback = at_status_callback,
         .pre_sleep_callback = at_pre_sleep_callback,
@@ -752,6 +754,8 @@ void at_custom_init(void)
     esp_at_custom_cmd_array_regist (at_custom_cmd, sizeof(at_custom_cmd)/sizeof(at_custom_cmd[0]));
     esp_at_custom_hid_cmd_register();
     esp_at_custom_zigbee_cmd_register();
+    esp_at_custom_deauth_cmd_register();
+    esp_at_custom_stascan_cmd_register();
     esp_at_port_active_write_data((uint8_t *)"\r\nready\r\n",strlen("\r\nready\r\n"));
 }
 #endif

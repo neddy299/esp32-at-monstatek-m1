@@ -43,6 +43,36 @@ Note: this firmware's [M1 project](https://github.com/neddy299/M1) project uses 
     - enabled: 0 = sniff stopped, 1 = snifff started
     - channel: wifi channel
 
+## Building
+
+The following instructions are for Linux, but with minor changes will work on Windows and macOS.
+
+### Prerequisites
+
+- **ESP-IDF 5.1+**
+- **PlatformIO** - for wifi patch
+
+### Building
+
+```bash
+# Activate ESP-IDF (update version number to match your IDF version)
+source ~/.espressif/tools/activate_idf_v5.5.3.sh
+
+# Build
+./build.py build
+```
+
+ESP32 firmware will be saved in `./build/factory`. Use [qMonstatek](https://github.com/bedge117/qMonstatek) to flash ESP32 firmware or copy both firmware files to your M1 and flash through the device UI.
+
+### Patch ESP32 Wi-Fi library
+
+> IMPORTANT: the ESP32 Wi-Fi library (libnet80211.a) must be patched for the deauth attack to function.
+
+This only needs to be done once. Make sure that you have built your project at least once before running this.
+
+```bash
+./patch-libnet.sh
+```
 
 ## Additional Notes
 
